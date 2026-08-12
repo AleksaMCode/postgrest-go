@@ -313,16 +313,21 @@ func TestTransformBuilder_MaxAffected(t *testing.T) {
 }
 
 func TestTransformBuilder_AbortSignal(t *testing.T) {
-	c := createClient(t)
+	c := NewClient("http://localhost:3000", "", nil)
+	c.session = &http.Client{
+		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			resp := httpmock.NewStringResponse(200, "[]")
+			return resp, nil
+		}),
+	}
 
-	// AbortSignal is a no-op in Go, just test it doesn't break
+	// AbortSignal is a no-op in Go; verify it does not break execution.
 	response, err := c.From("users").
 		Select("*", nil).
 		Order("id", nil).
 		AbortSignal(nil).
 		Execute(context.Background())
 
-	// Should not error
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
